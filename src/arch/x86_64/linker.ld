@@ -10,6 +10,13 @@ SECTIONS {
 
 	.text :
 	{
-		*(.text)
+		*(.text .text.*)
 	}
+
+	.rodata : 
+	{
+		*(.rodata .rodata.*)
+	}
+
+	
 }

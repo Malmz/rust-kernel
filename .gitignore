@@ -2,3 +2,4 @@ build
 isofiles
 os.iso
 target
+.vscode
