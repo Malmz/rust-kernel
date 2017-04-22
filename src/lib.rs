@@ -23,7 +23,6 @@ pub extern fn rust_main(multiboot_information_adress: usize) {
 			area.base_addr, area.length);
 	}
 
-	/*
 	let elf_sections_tag = boot_info.elf_sections_tag()
 		.expect("Elf-sections tag required");
 	println!("Kernel sections:");
@@ -31,7 +30,13 @@ pub extern fn rust_main(multiboot_information_adress: usize) {
 		println!("\taddr: 0x{:x}, size: 0x{:x}, flags: 0x{:x}",
 			sections.addr, sections.size, sections.flags);
 	}
-	*/
+
+	let kernel_start = elf_sections_tag.sections().map(|s| s.addr)
+		.min().unwrap();
+	let kernel_end = elf_sections_tag.sections().map(|s| s.addr + s.size)
+		.max().unwrap();
+	let multiboot_start = multiboot_information_adress;
+	let multiboot_end = multiboot_start + (boot_info.total_size as usize);
 
 	loop{}
 }
