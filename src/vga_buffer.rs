@@ -54,10 +54,11 @@ struct Buffer {
 	chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],
 }
 
+
 pub struct Writer {
 	column_position: usize,
 	color_code: ColorCode,
-	buffer: Unique<Buffer>
+	buffer: Unique<Buffer>,
 }
 
 impl Writer {
