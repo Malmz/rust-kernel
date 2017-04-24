@@ -12,7 +12,7 @@ start:
 	call check_long_mode
 
 	call set_up_page_tables
-	call enable_pageing
+	call enable_paging
 
 	; load the 64-bit GDT
 	lgdt [gdt64.pointer]
@@ -23,6 +23,10 @@ start:
 	hlt
 
 set_up_page_tables:
+	mov eax, p4_table
+	or eax, 0b11
+	mov [p4_table + 511 * 8], eax
+
 	mov eax, p3_table
 	or eax, 0b11
 	mov [p4_table], eax
@@ -44,7 +48,7 @@ set_up_page_tables:
 	jne .map_p2_table
 	ret
 
-enable_pageing:
+enable_paging:
 	mov eax, p4_table
 	mov cr3, eax
 
