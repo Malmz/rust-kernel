@@ -1,13 +1,26 @@
 use core::ptr::Unique;
 use volatile::Volatile;
 use core::fmt;
+use core::fmt::Write;
 use spin::Mutex;
 
 pub static WRITER: Mutex<Writer> = Mutex::new(Writer {
 	column_position: 0,
+	row_position: 0,
 	color_code: ColorCode::new(Color::LightGreen, Color::Black),
-	buffer: unsafe{ Unique::new(0xb8000 as *mut _) },
+	buffer: unsafe { Unique::new(0xb8000 as *mut _) },
 });
+
+macro_rules! print {
+	($($arg:tt)*) => ({
+		$crate::vga_buffer::print(format_args!($($arg)*));
+	});
+}
+
+macro_rules! println {
+    ($fmt:expr) => (print!(concat!($fmt, "\n")));
+    ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
+}
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
@@ -57,24 +70,25 @@ struct Buffer {
 
 pub struct Writer {
 	column_position: usize,
+	row_position: usize,
 	color_code: ColorCode,
 	buffer: Unique<Buffer>,
 }
 
 impl Writer {
+	fn to_top(&mut self) {
+		self.row_position = 0;
+	}
 	pub fn write_byte(&mut self, byte: u8) {
 		match byte {
 			b'\n' => self.new_line(),
-			b'\t' => {
-				use core::fmt::Write;
-				self.write_str("    ");
-			},
+			b'\t' => self.write_str("    ").unwrap(),
 			byte => {
 				if self.column_position >= BUFFER_WIDTH {
 					self.new_line();
 				}
 
-				let row = BUFFER_HEIGHT -1;
+				let row = self.row_position;
 				let col = self.column_position;
 				let color_code = self.color_code;
 
@@ -87,19 +101,26 @@ impl Writer {
 		}
 	}
 
+
 	fn buffer(&mut self) -> &mut Buffer {
-		unsafe{ self.buffer.get_mut() }
+		unsafe { self.buffer.get_mut() }
 	}
 
 	fn new_line(&mut self) {
-		for row in 1..BUFFER_HEIGHT {
-			for col in 0..BUFFER_WIDTH {
-				let buffer = self.buffer();
-				let character = buffer.chars[row][col].read();
-				buffer.chars[row - 1][col].write(character);
+		let row = self.row_position;
+		if row < BUFFER_HEIGHT - 1 {
+			self.row_position += 1;
+			self.clear_row(row+1);
+		} else {
+			for row in 1..BUFFER_HEIGHT {
+				for col in 0..BUFFER_WIDTH {
+					let buffer = self.buffer();
+					let character = buffer.chars[row][col].read();
+					buffer.chars[row - 1][col].write(character);
+				}
 			}
+			self.clear_row(BUFFER_HEIGHT-1);
 		}
-		self.clear_row(BUFFER_HEIGHT-1);
 		self.column_position = 0;
 	}
 
@@ -123,24 +144,16 @@ impl fmt::Write for Writer {
 	}
 }
 
-macro_rules! print {
-	($($arg:tt)*) => ({
-		$crate::vga_buffer::print(format_args!($($arg)*));
-	});
-}
-
-macro_rules! println {
-    ($fmt:expr) => (print!(concat!($fmt, "\n")));
-    ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
-}
-
 pub fn print(args: fmt::Arguments) {
 	use core::fmt::Write;
 	WRITER.lock().write_fmt(args).unwrap();
 }
 
-pub fn clear_screen() {
+/// Clears the vga buffer
+pub fn clear() {
 	for _ in 0..BUFFER_HEIGHT {
 		println!("");
 	}
+	WRITER.lock().to_top();
 }
+

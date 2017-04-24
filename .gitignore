@@ -3,3 +3,4 @@ isofiles
 os.iso
 target
 .vscode
+Cargo.lock

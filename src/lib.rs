@@ -5,6 +5,8 @@ extern crate rlibc;
 extern crate volatile;
 extern crate spin;
 extern crate multiboot2;
+#[macro_use]
+extern crate bitflags;
 
 #[macro_use]
 mod vga_buffer;
@@ -12,8 +14,8 @@ mod memory;
 
 #[no_mangle]
 pub extern fn rust_main(multiboot_information_adress: usize) {
-	let boot_info = unsafe{ multiboot2::load(multiboot_information_adress) };
-	vga_buffer::clear_screen();
+	let boot_info = unsafe { multiboot2::load(multiboot_information_adress) };
+	vga_buffer::clear();
 	
 	let memory_map_tag = boot_info.memory_map_tag()
 		.expect("Memory map tag required");
@@ -52,7 +54,6 @@ pub extern fn rust_main(multiboot_information_adress: usize) {
 			}
 		}
 	}
-
 
 	loop{}
 }
