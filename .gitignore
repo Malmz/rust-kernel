@@ -2,5 +2,5 @@ build
 isofiles
 os.iso
 target
-.vscode
 Cargo.lock
+nohup.out
